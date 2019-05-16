@@ -8,6 +8,7 @@ $ python main.py
 ```
 
 this will generate something like
+
 ![example_qr](test.png)
 
 ## Building the gRPC/protobuf bindings (optional)
