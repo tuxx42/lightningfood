@@ -46,7 +46,6 @@ class LndClient:
 
 if __name__ == '__main__':
     client = LndClient('localhost', 10006, CERT_PATH, MACAROON_PATH)
-    # print(client.AddInvoice(4000, 'chicken food').payment_request)
-    req = 'lnbc40u1pwdexz5pp5n9vtm426hehtyyypkrqj9lup7eg8m8wr72xvh9yn807xw3pngemqdq5vd5xjcmtv4hzqen0dajqcqzpgf79jdmp2uuyx0hstnwxe7lgsh74mshlw3nlmgycllqcf4etzqk8kkaufmm67ehq4um8yqec3rxrlacxeeekgdu6r682f3hqltzne8gcq75x2ey'
+    req = client.AddInvoice(4000, 'chicken food').payment_request
     version, size, im = qrencode.encode_scaled(req.encode('utf-8'), size=200)
     im.save('foo.jpg', quality=100)
