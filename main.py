@@ -3,7 +3,7 @@ import rpc_pb2_grpc as lnrpc
 import grpc
 import os
 import codecs
-import qrencode
+import qrcode
 
 CERT_PATH = '~/.config/lightning-app/lnd/tls.cert'
 MACAROON_PATH = '~/.config/lightning-app/lnd/data/chain/bitcoin/mainnet/admin.macaroon'  # noqa
@@ -47,5 +47,14 @@ class LndClient:
 if __name__ == '__main__':
     client = LndClient('localhost', 10006, CERT_PATH, MACAROON_PATH)
     req = client.AddInvoice(4000, 'chicken food').payment_request
-    version, size, im = qrencode.encode_scaled(req.encode('utf-8'), size=200)
-    im.save('foo.jpg', quality=100)
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4
+    )
+    qr.add_data(req)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    img.save('foo.jpg', quality=100)
