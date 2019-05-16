@@ -7,7 +7,7 @@ $ pip install -r requirements.txt
 $ python main.py
 ```
 
-this will generate something like
+running the above, will create a new invoice and generate a corresponding qrcode
 
 ![example_qr](test.png)
 
