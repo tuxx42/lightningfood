@@ -6,6 +6,8 @@ lightning network enabled food dispenser
 pip install -r requirements.txt
 ```
 
+![example_qr](test.png)
+
 ## Building the gRPC/protobuf bindings (optional)
 
 ```bash
