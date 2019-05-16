@@ -4,10 +4,11 @@ lightning network enabled food dispenser
 ## Setup
 ```
 $ pip install -r requirements.txt
-$ python main.py
+$ FLASK_APP=main.py flask run -h 0.0.0.0
 ```
 
-running the above, will create a new invoice and generate a corresponding qrcode
+running the above, will start a flask service which allows you to generate an invoice.
+Invoice generation will trigger the PWM to move the servo motor
 
 ![example_qr](test.png)
 
