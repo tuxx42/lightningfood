@@ -7,7 +7,7 @@ $ pip install -r requirements.txt
 $ FLASK_APP=main.py flask run -h 0.0.0.0
 ```
 
-running the above, will start a flask service which allows you to generate an invoice.
+Running the above, will start a flask service which allows you to generate an invoice.
 Invoice generation will trigger the PWM to move the servo motor
 
 ![example_qr](test.png)
