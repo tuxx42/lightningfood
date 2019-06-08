@@ -1,75 +1,31 @@
-import rpc_pb2 as ln
-import rpc_pb2_grpc as lnrpc
-from flask import Flask, render_template, make_response, send_from_directory
-# from flask_socketio import SocketIO, emit
+from lnd import LndClient
+from flask import (
+    Flask, render_template, make_response, send_from_directory, request
+)
+from flask_socketio import SocketIO, join_room, emit
 # from RPi import GPIO
-import grpc
-import os
-import codecs
-# import time
 
 app = Flask(__name__)
-
-MACAROONS_PATH = '/home/alarm/.lnd/data/chain/bitcoin/mainnet/admin.macaroon'
-CERT_PATH = '/home/alarm/.lnd/tls.cert'
-
-
-class LndClient:
-    def __init__(self, host='localhost', port=10009,
-                 cert_path='tls.cert', macaroons_path='admin.macaroon'):
-
-        with open(os.path.expanduser(macaroons_path), 'rb') as f:
-            macaroon = codecs.encode(f.read(), 'hex')
-
-        with open(os.path.expanduser(cert_path), 'rb') as f:
-            cert = f.read()
-
-        creds = grpc.composite_channel_credentials(
-            grpc.ssl_channel_credentials(cert),
-            grpc.metadata_call_credentials(
-                lambda a, b: b([('macaroon', macaroon)], None)
-            )
-        )
-
-        uri = '{host}:{port}'.format(host=host, port=port)
-        channel = grpc.secure_channel(uri, creds)
-
-        self.stub = lnrpc.LightningStub(channel)
-
-    def WalletBalance(self):
-        return self.stub.WalletBalance(ln.WalletBalanceRequest())
-
-    def ListPayments(self):
-        return self.stub.ListPayments(ln.ListPaymentsRequest())
-
-    def AddInvoice(self, amt=0, memo=''):
-        p = ln.Invoice(value=amt, memo=memo)
-        return self.stub.AddInvoice(p)
-
-    def SubscribeInvoices(self):
-        p = ln.InvoiceSubscription()
-        for invoice in self.stub.SubscribeInvoices(p):
-            yield invoice
-
-
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, async_mode='threading')
 client = LndClient(host='archie')
+clients = {}
 
 
 def wait_for_invoice():
     pass
-    # for i in client.SubscribeInvoices():
-    #     GPIO.setmode(GPIO.BCM)
-    #     GPIO.setup(18, GPIO.OUT)
-    #     p = GPIO.PWM(18, 50)
-    #     p.start(1)
-    #     p.ChangeDutyCycle(7.5)
-    #     time.sleep(0.3)
-    #     p.ChangeDutyCycle(12.5)
-    #     time.sleep(0.8)
-    #     p.ChangeDutyCycle(7.5)
-    #     time.sleep(1)
-    #     p.stop()
-    #     GPIO.cleanup()
+
+
+@socketio.on('register_invoice')
+def handle_invoice(invoice):
+    clients[invoice['invoice']] = request.sid
+    join_room(request.sid)
+
+    for i in client.SubscribeInvoices():
+        if i.settled is True:
+            print('paying', i.payment_request)
+            room = clients.get(i.payment_request)
+            emit('settled', {'invoice': i.payment_request}, room=room)
 
 
 @app.route('/')
@@ -91,4 +47,4 @@ def send_js(path):
 
 
 if __name__ == '__main__':
-    pass
+    socketio.run(app, debug=True)

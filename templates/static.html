@@ -155,7 +155,7 @@ body {
 .overlay a {
   padding: 8px;
   text-decoration: none;
-  font-size: 36px;
+  font-size: 16px;
   color: #818181;
   display: block;
   transition: 0.3s;
@@ -187,6 +187,8 @@ body {
     <div id="myNav" class="overlay">
       <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
       <div id="navContent" class="overlay-content">
+	      <a href="#"><div id="qrcode"></div></a>
+	      <a href="#"><input type="text" id="lnd" readonly class="form-control form-control-sm" style="text-align:center;"></a>
       </div>
     </div>
 
@@ -228,9 +230,27 @@ body {
       <script>
           function openNav() {
               jQuery.get("/invoice", function(data, status) {
-	          document.getElementById("myNav").style.width = "30%";
-	          document.getElementById("navContent").innerHTML = '<img src="' + data + '">';
+                  document.getElementById("qrcode").innerHTML = "";
+	          var qrcode = new QRCode("qrcode", {
+                       correctLevel: QRCode.CorrectLevel.L,
+                       colorDark: "#fff", colorLight: "#000",
+                       id: "qrcode-img"
+                  });
+                  qrcode.clear();
+                  qrcode.makeCode(data);
+	          document.getElementById("lnd").value = data;
+
+                  var socket = io();
+                  socket.emit('register_invoice', {invoice: data});
+                  socket.on('settled', function(data) {
+	               paidNav();
+	          });
               });
+              document.getElementById("myNav").style.width = "auto";
+          }
+          function paidNav() {
+              document.getElementById("qrcode-img").src = "/js/check.png";
+	      document.getElementById("lnd").value = "Payment received";
           }
           function closeNav() {
               document.getElementById("myNav").style.width = "0%";
@@ -248,9 +268,11 @@ body {
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
     <script>window.jQuery || document.write('<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"><\/script>')</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="js/qrcode.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
   </body>
 </html>
