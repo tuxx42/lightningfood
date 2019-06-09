@@ -32,7 +32,7 @@ class LndClient:
         return self.stub.WalletBalance(ln.WalletBalanceRequest())
 
     def LookupInvoices(self):
-        return self.stub.LookupInvoice(ln.LookupInvoiceRequest(reversed=True))
+        return self.stub.LookupInvoice(ln.LookupInvoiceRequest())
 
     def ListInvoices(self):
         return self.stub.ListInvoices(ln.ListInvoiceRequest(reversed=True))
