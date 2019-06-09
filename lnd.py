@@ -31,8 +31,11 @@ class LndClient:
     def WalletBalance(self):
         return self.stub.WalletBalance(ln.WalletBalanceRequest())
 
-    def ListPayments(self):
-        return self.stub.ListPayments(ln.ListPaymentsRequest())
+    def LookupInvoices(self):
+        return self.stub.LookupInvoice(ln.LookupInvoiceRequest(reversed=True))
+
+    def ListInvoices(self):
+        return self.stub.ListInvoices(ln.ListInvoiceRequest(reversed=True))
 
     def AddInvoice(self, amt=0, memo=''):
         p = ln.Invoice(value=amt, memo=memo)
@@ -42,3 +45,8 @@ class LndClient:
         p = ln.InvoiceSubscription()
         for invoice in self.stub.SubscribeInvoices(p):
             yield invoice
+
+
+if __name__ == '__main__':
+    client = LndClient(host='archie')
+    client.AddInvoice(200, "chicken food")

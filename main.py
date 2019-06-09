@@ -1,49 +1,73 @@
+from threading import Lock
+from flask import Flask, render_template, send_from_directory, request
+from flask_socketio import SocketIO, emit, join_room
 from lnd import LndClient
-from flask import (
-    Flask, render_template, make_response, send_from_directory, request
-)
-from flask_socketio import SocketIO, join_room, emit
-# from RPi import GPIO
+
+
+async_mode = None
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, async_mode='threading')
+socketio = SocketIO(app, async_mode=async_mode)
 client = LndClient(host='archie')
 clients = {}
+thread = None
+thread_lock = Lock()
 
 
-def wait_for_invoice():
-    pass
+def get_invoices(data):
+    return [i.payment_request for i in data if i.settled is True]
 
 
-@socketio.on('register_invoice')
-def handle_invoice(invoice):
-    clients[invoice['invoice']] = request.sid
-    join_room(request.sid)
+invoices = get_invoices(client.ListInvoices().invoices)
 
-    for i in client.SubscribeInvoices():
-        if i.settled is True:
-            print('paying', i.payment_request)
-            room = clients.get(i.payment_request)
-            emit('settled', {'invoice': i.payment_request}, room=room)
+
+def background_thread():
+    global invoices
+
+    while True:
+        i = client.ListInvoices()
+        for invoice in i.invoices:
+            if invoice.payment_request in invoices:
+                continue
+
+            if invoice.settled is True:
+                room = clients.get(invoice.payment_request)
+                socketio.emit(
+                    'settled', {'data': 'Server generated event', 'count': 0},
+                    room=room, namespace='/test'
+                )
+        invoices = get_invoices(i.invoices)
+        socketio.sleep(2)
 
 
 @app.route('/')
 def index():
-    return render_template('static.html')
-
-
-@app.route('/invoice')
-def invoice():
-    data = client.AddInvoice(200, "chicken food").payment_request
-    r = make_response(data)
-    r.mimetype = 'text/plain'
-    return r
+    return render_template('static.html', async_mode=socketio.async_mode)
 
 
 @app.route('/js/<path>')
 def send_js(path):
     return send_from_directory('js', path)
+
+
+@socketio.on('invoice', namespace='/test')
+def invoice():
+    data = client.AddInvoice(200, "chicken food").payment_request
+    clients[data] = request.sid
+    join_room(request.sid)
+    emit('invoice', data)
+
+
+@socketio.on('connect', namespace='/test')
+def test_connect():
+    global thread
+    global clients
+
+    with thread_lock:
+        if thread is None:
+            thread = socketio.start_background_task(background_thread)
+        emit('my_response', {'data': 'hi', 'count': 0}, namespace='/test')
 
 
 if __name__ == '__main__':
