@@ -10,7 +10,7 @@ $ FLASK_APP=main.py flask run -h 0.0.0.0
 Running the above, will start a flask service which allows you to generate an invoice.
 Invoice generation will trigger the PWM to move the servo motor
 
-![screenshot](flask.png)
+![screenshot](screen.png)
 
 ## Building the gRPC/protobuf bindings (optional)
 
